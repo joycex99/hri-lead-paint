@@ -1,2 +1,5 @@
 Recent_Lead_Paint_Violations.csv
 .ipynb_checkpoints/
+node_modules/
+*.csv
+.DS_STORE

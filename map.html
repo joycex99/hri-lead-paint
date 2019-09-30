@@ -1,0 +1,122 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head> 
+<title></title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.0/dist/leaflet.css" />
+<link rel="stylesheet" href="node_modules/leaflet-search/src/leaflet-search.css" />
+<!-- <link rel="stylesheet" href="style.css" /> -->
+</head>
+
+<body>
+<h3>NYC Lead Paint Violations</h3>
+<div>
+	<div id="map" style="width:600px;height:800px;float:left"></div>
+	<div style="float:left;padding:0px 20px">
+		<h4>Property Info</h4>
+		<div id="info"></div>
+	</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.3.0/dist/leaflet.js"></script>
+<script src="node_modules/leaflet-search/src/leaflet-search.js"></script>
+<script src="data/violations.js"></script>
+<script>
+	//sample data values define in us-states.js
+	var data = violations;
+	var nyc_coord = [40.73, -73.95];
+	var map = new L.Map('map', {zoom: 11, center: new L.latLng(nyc_coord), preferCanvas: true });
+	var panel = document.getElementById("info");
+
+	map.addLayer(new L.TileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png')); // base layer
+	var featuresLayer = new L.geoJson(data, {
+		// filter: function(feature) {
+		// 	return (feature.properties.numViolations > 3); 
+		// },
+		style: function(feature) {
+			return {color: feature.properties.color };
+		},
+		onEachFeature: function(feature, layer) {
+			addr = feature.properties.name.substring()
+			layer.bindPopup('<p>Violations: ' + feature.properties.numViolations + "</p>");
+		},
+	    pointToLayer: function(feature, latlng) {
+	        return new L.CircleMarker(latlng, {
+	        	radius: 1,
+	        });
+	    },
+	});
+
+	map.addLayer(featuresLayer);
+
+	function colorPortfolio(layer) {
+		if (styled) {
+			featuresLayer.eachLayer(function(layer) {	//restore feature color
+				featuresLayer.resetStyle(layer);
+			});	
+			info.innerHTML = "";
+		}
+		styled = true;
+	    buildings = layer.feature.properties.portfolioBuildings;
+	    featuresLayer.eachLayer(function(layer) {
+			if (buildings.includes(layer.feature.properties.buildingId)) {
+				layer.setStyle({color: 'blue', radius: 2});
+				// layer.setZIndexOffset(1000);
+			}
+		});
+		info.innerHTML = "<b>Address: </b>" + layer.feature.properties.name.toUpperCase() + "<br>" + 
+						 "<b>Portfolio size: </b>" + layer.feature.properties.portfolioSize + "<br>" + 
+						 "<b>Units in portfolio: </b>" + layer.feature.properties.portfolioUnits + "<br>" + 
+						 "<b>Evictions in portfolio: </b>" + layer.feature.properties.portfolioEvictions; 
+	}
+
+	var styled = false;
+	featuresLayer.on("click", function (event) {
+		var layer = event.layer;
+	    console.log(layer);
+		colorPortfolio(layer);
+	});
+	map.on("click", function(e) {
+		if (styled) {
+			featuresLayer.eachLayer(function(layer) {	//restore feature color
+				featuresLayer.resetStyle(layer);
+			});	
+			styled = false;
+		}
+	})
+
+
+
+	var searchControl = new L.Control.Search({
+		layer: featuresLayer,
+		propertyName: "name",
+		marker: false,
+		moveToLocation: function(latlng, title, map) {
+			//map.fitBounds( latlng.layer.getBounds() );
+			// var zoom = map.getBoundsZoom(latlng.layer.getBounds());
+  			map.setView(latlng); // (latlng, zoom)  // access the zoom
+		}
+	});
+	searchControl.on("search:locationfound", function(e) {
+		
+		//console.log('search:locationfound', );
+		//map.removeLayer(this._markerSearch)
+		e.layer.setStyle({fillColor: "#3f0", color: "#0f0"});
+		if(e.layer._popup) {
+			e.layer.openPopup();
+			colorPortfolio(e.layer);
+		}
+
+	}).on("search:collapsed", function(e) {
+		featuresLayer.eachLayer(function(layer) {	//restore feature color
+			featuresLayer.resetStyle(layer);
+		});	
+	});
+	
+	map.addControl( searchControl );  //inizialize search control
+</script>
+
+<!-- <script type="text/javascript" src="/labs-common.js"></script> -->
+
+</body>
+</html>
